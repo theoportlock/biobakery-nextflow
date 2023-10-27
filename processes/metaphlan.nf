@@ -1,6 +1,7 @@
 process metaphlan {
     tag "metaphlan on $sample"
     publishDir "$params.outdir/metaphlan", pattern: "{*.tsv}"
+    container "$params.metaphlan_image"
 
     input:
     tuple val(sample), path(kneads)
@@ -8,11 +9,11 @@ process metaphlan {
     path metaphlan_db
 
     output:
-    val  sample                  , emit: sample
-    path "${sample}_profile.tsv" , emit: profile
+    val sample, emit: sample
+    path "${sample}_profile.tsv", emit: profile
     path "${sample}_grouped.fastq.gz"
     path "${sample}_bowtie2.tsv"
-    path "${sample}.sam"
+    path "${sample}.sam.bz2"
 
     script:
     def forward = kneads[0]
@@ -22,31 +23,43 @@ process metaphlan {
 
     """
     cat $forward $reverse $unf $unr > ${sample}_grouped.fastq.gz
-    
     metaphlan ${sample}_grouped.fastq.gz ${sample}_profile.tsv \
         --bowtie2out ${sample}_bowtie2.tsv \
-        --samout ${sample}.sam \
+        --samout ${sample}.sam.bz2 \
         --input_type fastq \
         --nproc ${task.cpus} \
         --bowtie2db $metaphlan_db
     """
 }
  
- process metaphlan_bzip {
-    tag "metaphlan_bzip on $sample"
-    publishDir "$params.outdir/metaphlan"
-    stageInMode "copy"
+process metaphlan_init {
+    tag "metaphlan install database"
+    container "$params.metaphlan_image"
 
     input:
-    val sample
-    path sam
+    val metaphlandb
 
     output:
-    val  sample                  , emit: sample
-    path "${sample}.sam.bz2"
+    path "db"
 
     script:
     """
-    bzip2 -v $sam
+    metaphlan --install --index ${params.metaphlan_db} --bowtie2db db
+    """
+}
+
+process metaphlan_merge {
+    tag "metaphlan merge outputs"
+    container "$params.metaphlan_image"
+
+    input:
+    path metaphlan_profiles
+
+    output:
+    path "metaphlan_merged_profiles.tsv"
+
+    script:
+    """
+    merge_metaphlan_tables.py $metaphlan_profiles metaphlan_merged_profiles.tsv
     """
 }

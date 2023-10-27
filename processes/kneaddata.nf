@@ -1,15 +1,12 @@
 process kneaddata {
     tag "kneaddata $sample"
     publishDir "$params.outdir/kneaddata"
-    time { workflow.profile == 'standard' ? null : time * task.attempt }
-    memory { workflow.profile == 'standard' ? null : memory * task.attempt }
-
-    errorStrategy 'retry'
-    maxRetries 3
+    //container "https://depot.galaxyproject.org/singularity/kneaddata%3A0.12.0--pyhdfd78af_1"
+    container "$params.kneaddata_image"
 
     input:
     tuple val(sample), path(reads)
-    path human_genome
+    path kneaddata_db
 
     output:
     tuple val(sample), path("${sample}_kneaddata_paired_{1,2}.fastq.gz")
@@ -18,15 +15,43 @@ process kneaddata {
     path "${sample}_kneaddata.log"                       , emit: log
 
     shell:
-    
     """
-    echo $sample
-
-    kneaddata --input ${reads[0]} --input ${reads[1]} \
-              --reference-db $human_genome --output ./ \
-              --processes ${task.cpus} --output-prefix ${sample}_kneaddata \
-              --trimmomatic /opt/conda/share/trimmomatic
-
+    kneaddata --input ${reads[0]} --input ${reads[1]} --reference-db $kneaddata_db --output . --processes ${task.cpus} --output-prefix ${sample}_kneaddata
     gzip *.fastq
+    """  
+}
+
+process kneaddata_init {
+    tag "kneaddata build database"
+    container "$params.kneaddata_image"
+
+    input:
+    val kneaddata_db
+
+    output:
+    path "kneaddata_db"
+
+    script:
+    """
+    kneaddata_database --download $kneaddata_db bowtie2 kneaddata_db/
+    """  
+}
+
+process kneaddata_summary {
+    tag "kneaddata summarise run"
+    container "$params.kneaddata_image"
+    publishDir "$params.outdir/kneaddata"
+
+    input:
+    path kneaddata_logs
+
+    output:
+    path "kneaddata_summary"
+
+    script:
+    """
+    mkdir knead_log_dir
+    ln -s $kneaddata_logs knead_log_dir
+    kneaddata_read_count_table --input knead_log_dir --output kneaddata_summary
     """  
 }
