@@ -15,6 +15,7 @@ process strainphlan_sample2markers {
     mkdir -p consensus_markers
     sample2markers.py \
     	-i $sams \
+	-d $metaphlan_db \
 	-o consensus_markers \
         -n ${task.cpus} \
     """

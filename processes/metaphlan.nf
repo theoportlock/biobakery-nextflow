@@ -51,6 +51,7 @@ process metaphlan_init {
 process metaphlan_merge {
     tag "metaphlan merge outputs"
     container "$params.metaphlan_image"
+    publishDir "$params.outdir/metaphlan"
 
     input:
     path metaphlan_profiles
@@ -60,6 +61,6 @@ process metaphlan_merge {
 
     script:
     """
-    merge_metaphlan_tables.py $metaphlan_profiles metaphlan_merged_profiles.tsv
+    merge_metaphlan_tables.py $metaphlan_profiles > metaphlan_merged_profiles.tsv
     """
 }

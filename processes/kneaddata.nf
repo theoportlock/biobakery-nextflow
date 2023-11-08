@@ -46,12 +46,12 @@ process kneaddata_summary {
     path kneaddata_logs
 
     output:
-    path "kneaddata_summary"
+    path "kneaddata_summary.tsv"
 
     script:
     """
     mkdir knead_log_dir
-    ln -s $kneaddata_logs knead_log_dir
-    kneaddata_read_count_table --input knead_log_dir --output kneaddata_summary
+    cp $kneaddata_logs knead_log_dir
+    kneaddata_read_count_table --input knead_log_dir --output kneaddata_summary.tsv
     """  
 }
