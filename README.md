@@ -1,11 +1,8 @@
 # Nextflow pipeline for running the bioBakery
+Based on projects from Kevin Bonham and Tommi Vatanen
 
-by Kevin Bonham, PhD
-
+Runs the following processes:
 - `KneadData`
 - `MetaPhlAn`
 - `HUMAnN`
-
-## Setup
-
-**TODO**
+- `StrainPhlAn`
