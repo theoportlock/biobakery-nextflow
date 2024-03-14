@@ -1,6 +1,6 @@
 process metaphlan {
     tag "metaphlan on $sample"
-    publishDir "$params.outdir/metaphlan", pattern: "{*.tsv}"
+    //publishDir "$params.outdir/metaphlan", pattern: "{*.tsv}"
     container "$params.metaphlan_image"
 
     input:
@@ -51,7 +51,7 @@ process metaphlan_init {
 process metaphlan_merge {
     tag "metaphlan merge outputs"
     container "$params.metaphlan_image"
-    publishDir "$params.outdir/metaphlan"
+    publishDir "$params.outdir/metaphlan", mode: "copy", overwrite: true
 
     input:
     path metaphlan_profiles

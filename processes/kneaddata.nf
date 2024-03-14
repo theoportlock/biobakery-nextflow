@@ -1,6 +1,6 @@
 process kneaddata {
     tag "kneaddata $sample"
-    publishDir "$params.outdir/kneaddata"
+    //publishDir "$params.outdir/kneaddata"
     //container "https://depot.galaxyproject.org/singularity/kneaddata%3A0.12.0--pyhdfd78af_1"
     container "$params.kneaddata_image"
 
@@ -40,7 +40,7 @@ process kneaddata_init {
 process kneaddata_summary {
     tag "kneaddata summarise run"
     container "$params.kneaddata_image"
-    publishDir "$params.outdir/kneaddata"
+    publishDir "$params.outdir/kneaddata", mode: "copy", overwrite: true
 
     input:
     path kneaddata_logs

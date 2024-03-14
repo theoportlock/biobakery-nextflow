@@ -1,6 +1,6 @@
 process humann {
     tag "humann on $sample"
-    publishDir "$params.outdir/humann/main"
+    //publishDir "$params.outdir/humann/main"
     container "$params.humann_image"
 
     input:
@@ -8,8 +8,7 @@ process humann {
     path profile
     path catkneads
     path metaphlan_db
-    path humann_nucleotide_db
-    path humann_protein_db
+    path humann_db
 
     output:
     val sample
@@ -48,7 +47,7 @@ process humann_init {
 
 process humann_regroup {
     tag "humann_regroup on $sample"
-    publishDir "$params.outdir/humann/regroup"
+    //publishDir "$params.outdir/humann/regroup"
     container "$params.humann_image"
 
     input:
@@ -72,16 +71,15 @@ process humann_regroup {
 
 process humann_rename {
     tag "humann_rename on $sample"
-    publishDir "$params.outdir/humann/rename"
-
-    container "biobakery/humann:3.6"
+    //publishDir "$params.outdir/humann/rename"
+    container "$params.humann_image"
 
     input:
     val sample
     path rxn
 
     output:
-    val  sample , emit: sample
+    val sample, emit: sample
     path "${sample}_rxn_rename.tsv"
 
     script:
@@ -92,22 +90,27 @@ process humann_rename {
 
 process humann_merge {
     tag "humann_merge"
-    publishDir "$params.outdir/humann"
-
-    container "biobakery/humann:3.6"
+    publishDir "$params.outdir/humann", mode: "copy", overwrite: true
+    container "$params.humann_image"
 
     input:
-    path humann_profiles
+    path genefamilies
+    path pathabundance
+    path pathcoverage
 
     output:
-    val  sample , emit: sample
-    path "${sample}_rxn_rename.tsv"
+    path "merged_genefamilies.tsv"
+    path "merged_pathabundance.tsv"
+    path "merged_pathcoverage.tsv"
 
     script:
     """
-    group='pathabundances'
-    mkdir $group
-    ln -s *"$group"* $group
-    humann_join_tables --input $group --output humann_merged_${group}.tsv
+    mkdir genefamilies pathabundance pathcoverage
+    cp -a $genefamilies genefamilies
+    cp -a $pathabundance pathabundance
+    cp -a $pathcoverage pathcoverage
+    humann_join_tables --input pathabundance --output merged_pathabundance.tsv
+    humann_join_tables --input pathcoverage --output merged_pathcoverage.tsv
+    humann_join_tables --input genefamilies --output merged_genefamilies.tsv
     """
 }
