@@ -1,6 +1,8 @@
-process metaphlan {
+process METAPHLAN {
+    label "process_medium" 
+
     tag "metaphlan on $sample"
-    //publishDir "$params.outdir/metaphlan", pattern: "{*.tsv}"
+    publishDir "$params.outdir/metaphlan", pattern: "{*.tsv}"
     container "$params.metaphlan_image"
 
     input:
@@ -32,23 +34,27 @@ process metaphlan {
     """
 }
  
-process metaphlan_init {
+process METAPHLAN_INIT {
+    label "process_single"
+
     tag "metaphlan install database"
     container "$params.metaphlan_image"
 
     input:
-    val metaphlandb
+    val metaphlan_db
 
     output:
-    path "db"
+    path "metaphlan_db"
 
     script:
     """
-    metaphlan --install --index ${params.metaphlan_db} --bowtie2db db
+    metaphlan --install --index ${metaphlan_db} --bowtie2db metaphlan_db
     """
 }
 
-process metaphlan_merge {
+process METAPHLAN_MERGE {
+    label "process_single"
+
     tag "metaphlan merge outputs"
     container "$params.metaphlan_image"
     publishDir "$params.outdir/metaphlan", mode: "copy", overwrite: true

@@ -1,7 +1,9 @@
-process kneaddata {
+process KNEADDATA {
+    label "process_medium"
+    label "error_retry"
+
     tag "kneaddata $sample"
-    //publishDir "$params.outdir/kneaddata"
-    //container "https://depot.galaxyproject.org/singularity/kneaddata%3A0.12.0--pyhdfd78af_1"
+    publishDir "$params.outdir/kneaddata"
     container "$params.kneaddata_image"
 
     input:
@@ -21,7 +23,9 @@ process kneaddata {
     """  
 }
 
-process kneaddata_init {
+process KNEADDATA_INIT {
+    label "process_single"
+
     tag "kneaddata build database"
     container "$params.kneaddata_image"
 
@@ -33,11 +37,13 @@ process kneaddata_init {
 
     script:
     """
-    kneaddata_database --download $kneaddata_db bowtie2 kneaddata_db/
-    """  
+    kneaddata_database --download $kneaddata_db bowtie2 kneaddata_db
+    """
 }
 
-process kneaddata_summary {
+process KNEADDATA_SUMMARY {
+    label "process_single"
+
     tag "kneaddata summarise run"
     container "$params.kneaddata_image"
     publishDir "$params.outdir/kneaddata", mode: "copy", overwrite: true

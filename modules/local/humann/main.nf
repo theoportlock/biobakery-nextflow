@@ -1,6 +1,8 @@
-process humann {
+process HUMANN {
+    label "process_medium"
+
     tag "humann on $sample"
-    //publishDir "$params.outdir/humann/main"
+    publishDir "$params.outdir/humann/main"
     container "$params.humann_image"
 
     input:
@@ -30,7 +32,9 @@ process humann {
     """
 }
 
-process humann_init {
+process HUMANN_INIT {
+    label "process_single"
+
     tag "humann download databases"
     container "$params.humann_image"
 
@@ -45,9 +49,11 @@ process humann_init {
     """
 }   
 
-process humann_regroup {
+process HUMANN_REGROUP {
+    label "process_single"
+
     tag "humann_regroup on $sample"
-    //publishDir "$params.outdir/humann/regroup"
+    publishDir "$params.outdir/humann/regroup"
     container "$params.humann_image"
 
     input:
@@ -69,9 +75,11 @@ process humann_regroup {
     """
 }   
 
-process humann_rename {
+process HUMANN_RENAME {
+    label "process_single"
+
     tag "humann_rename on $sample"
-    //publishDir "$params.outdir/humann/rename"
+    publishDir "$params.outdir/humann/rename"
     container "$params.humann_image"
 
     input:
@@ -88,7 +96,9 @@ process humann_rename {
     """
 }
 
-process humann_merge {
+process HUMANN_MERGE {
+    label "process_medium"
+
     tag "humann_merge"
     publishDir "$params.outdir/humann", mode: "copy", overwrite: true
     container "$params.humann_image"

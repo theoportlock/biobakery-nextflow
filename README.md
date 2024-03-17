@@ -6,4 +6,3 @@ Runs the following processes:
 - `KneadData`
 - `MetaPhlAn`
 - `HUMAnN`
-- `StrainPhlAn`

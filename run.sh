@@ -1,13 +1,12 @@
 #!/bin/bash
-export NXF_SINGULARITY_CACHEDIR=$INSERTDIR
-export SINGULARITY_CACHEDIR=$INSERTDIR
-
 module load Nextflow Singularity
+
+PROJECT=''
+FILEREGEX=''
 nextflow ~/biobakery-nextflow/main.nf \
-        --project $INSERTPROJECT \
-	-profile engaging \
+        --project $PROJECT \
+	--input $FILEREGEX \
         -c nesi.config \
-        -c run.config \
         -with-tower \
 	-resume \
         -bg
