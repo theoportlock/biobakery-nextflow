@@ -30,7 +30,8 @@ process METAPHLAN {
         --samout ${sample}.sam.bz2 \
         --input_type fastq \
         --nproc ${task.cpus} \
-        --bowtie2db $metaphlan_db
+        --bowtie2db $metaphlan_db \
+	--index ${params.metaphlan_db}
     """
 }
  
