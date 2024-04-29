@@ -1,6 +1,7 @@
 process KNEADDATA {
-    label "process_medium"
-    label "error_retry"
+    label "process_low"
+    //label "process_extra_long"
+    label "error_ignore"
 
     tag "kneaddata $sample"
     publishDir "$params.outdir/kneaddata"
