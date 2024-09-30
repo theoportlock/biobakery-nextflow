@@ -17,18 +17,18 @@ workflow {
     knead_out = KNEADDATA(read_pairs_ch, kneaddata_db)
     KNEADDATA_SUMMARY(knead_out.log.collect())
 
-    if( params.metaphlan_db_dir == null ) {
-        metaphlan_db = METAPHLAN_INIT(params.metaphlan_db)
-        } else {
-        metaphlan_db = file(params.metaphlan_db_dir)
-        }
-    metaphlan_out = METAPHLAN(knead_out[0], knead_out[1], metaphlan_db)
-    METAPHLAN_MERGE(metaphlan_out.profile.collect())
+    //if( params.metaphlan_db_dir == null ) {
+    //    metaphlan_db = METAPHLAN_INIT(params.metaphlan_db)
+    //    } else {
+    //    metaphlan_db = file(params.metaphlan_db_dir)
+    //    }
+    //metaphlan_out = METAPHLAN(knead_out[0], knead_out[1], metaphlan_db)
+    //METAPHLAN_MERGE(metaphlan_out.profile.collect())
 
-    //humann_db = HUMANN_INIT(params.humann_db_dir)
-    humann_db = HUMANN_INIT()
-    humann_out = HUMANN(metaphlan_out[0], metaphlan_out[1], metaphlan_out[2], metaphlan_db, humann_db)
-    //regroup_out = HUMANN_REGROUP(metaphlan_out[0], humann_out[0], humann_out[1])
-    //humann_rename(regroup_out)
-    HUMANN_MERGE(humann_out[1].collect(),humann_out[2].collect(),humann_out[3].collect())
+    ////humann_db = HUMANN_INIT(params.humann_db_dir)
+    //humann_db = HUMANN_INIT()
+    //humann_out = HUMANN(metaphlan_out[0], metaphlan_out[1], metaphlan_out[2], metaphlan_db, humann_db)
+    ////regroup_out = HUMANN_REGROUP(metaphlan_out[0], humann_out[0], humann_out[1])
+    ////humann_rename(regroup_out)
+    //HUMANN_MERGE(humann_out[1].collect(),humann_out[2].collect(),humann_out[3].collect())
 }
