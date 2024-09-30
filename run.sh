@@ -1,12 +1,7 @@
 #!/bin/bash
-module load Nextflow Singularity
+#module load Nextflow Singularity
 
-PROJECT=''
-FILEREGEX=''
-nextflow ~/biobakery-nextflow/main.nf \
-        --project $PROJECT \
-	--input $FILEREGEX \
-        -c nesi.config \
-        -with-tower \
-	-resume \
-        -bg
+nextflow main.nf \
+	-c laptop.config \
+	--input testdata/rawfastq/*R{1,2}*.fastq.gz \
+	--k
