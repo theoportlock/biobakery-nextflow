@@ -1,40 +1,33 @@
 process METAPHLAN {
-    label "process_medium" 
+    label "process_medium"
 
     tag "metaphlan on $sample"
     publishDir "$params.outdir/metaphlan", pattern: "{*.tsv}"
     container "$params.metaphlan_image"
 
     input:
-    tuple val(sample), path(kneads)
-    path unmatched
+    tuple val(sample), path(reads)
     path metaphlan_db
 
     output:
     val sample, emit: sample
     path "${sample}_profile.tsv", emit: profile
-    path "${sample}_grouped.fastq.gz"
-    path "${sample}_bowtie2.tsv"
     path "${sample}.sam.bz2"
 
     script:
-    def forward = kneads[0]
-    def reverse = kneads[1]
-    def unf = unmatched[0]
-    def unr = unmatched[1]
-
     """
-    cat $forward $reverse $unf $unr > ${sample}_grouped.fastq.gz
-    metaphlan ${sample}_grouped.fastq.gz ${sample}_profile.tsv \
+    metaphlan \
         --bowtie2out ${sample}_bowtie2.tsv \
         --samout ${sample}.sam.bz2 \
         --input_type fastq \
         --nproc ${task.cpus} \
         --bowtie2db $metaphlan_db \
-	--index ${params.metaphlan_db}
+        --index ${params.metaphlan_db} \
+        ${reads} \
+        ${sample}_profile.tsv
     """
 }
- 
+
 process METAPHLAN_INIT {
     label "process_single"
 
@@ -48,9 +41,18 @@ process METAPHLAN_INIT {
     path "metaphlan_db"
 
     script:
-    """
-    metaphlan --install --index ${metaphlan_db} --bowtie2db metaphlan_db
-    """
+    if (params.metaphlan_db_dir == null || params.metaphlan_db_dir.isEmpty()) {
+        """
+	metaphlan \
+	    --install \
+	    --index ${metaphlan_db} \
+	    --bowtie2db metaphlan_db
+        """
+    } else {
+        """
+        ln -s ${params.metaphlan_db_dir} metaphlan_db
+        """
+    }
 }
 
 process METAPHLAN_MERGE {

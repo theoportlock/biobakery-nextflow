@@ -1,12 +1,16 @@
 #!/bin/bash
-module load Nextflow Singularity
+module load Nextflow Apptainer
 
-PROJECT=''
-FILEREGEX=''
-nextflow ~/biobakery-nextflow/main.nf \
-        --project $PROJECT \
-	--input $FILEREGEX \
-        -c nesi.config \
-        -with-tower \
+nextflow main.nf \
+	-c conf/nesi.config \
+	-with-tower \
 	-resume \
-        -bg
+	-w /nesi/nobackup/uoa03902/biobakery4/work \
+	-bg \
+	--input '/scale_wlg_persistent/filesets/home/tpor598/biobakery-nextflow/testdata/*R{1,2}*' \
+	--outdir /nesi/nobackup/uoa03902/biobakery4/output \
+        --project uoa03624 \
+	--k \
+	--m \
+	--h
+
