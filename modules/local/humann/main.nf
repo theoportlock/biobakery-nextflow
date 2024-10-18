@@ -1,6 +1,7 @@
 process HUMANN {
-    label "process_high"
-    label "process_long"
+    label "process_medium"
+    // label "process_high"
+    // label "process_long"
     label "error_retry"
 
     tag "humann on $sample"
@@ -64,20 +65,20 @@ process HUMANN_MERGE {
     container "$params.humann_image"
 
     input:
-    path genefam
-    path pathway
-    path pathway_coverage
+    path genefamilies
+    path pathabundance
+    path pathcoverage
 
     output:
-    path "humann3_genefam_rpk.tsv", emit: genefam
-    path "humann3_pathway_rpk.tsv", emit: pathway
-    path "humann3_pathway_coverage.tsv", emit: pathway_coverage
+    path "humann3_genefamilies_rpk.tsv", emit: genefamilies
+    path "humann3_pathabundance_rpk.tsv", emit: pathabundance
+    path "humann3_pathcoverage.tsv", emit: pathcoverage
 
     script:
     """
-    humann_join_tables -i genefam -o humann3_genefam_rpk.tsv
-    humann_join_tables -i pathway -o  humann3_pathway_rpk.tsv
-    humann_join_tables -i pathway_coverage -o  humann3_pathway_coverage.tsv
+    humann_join_tables -i . -o humann3_genefamilies_rpk.tsv --file_name genefamilies
+    humann_join_tables -i . -o humann3_pathabundance_rpk.tsv --file_name pathabundance
+    humann_join_tables -i . -o humann3_pathcoverage.tsv --file_name pathcoverage
     """
 }
 
@@ -89,18 +90,17 @@ process HUMANN_RENORM {
     container "$params.humann_image"
 
     input:
-    path genefam
-    path pathway
+    path genefamilies
+    path pathabundance
 
     output:
-    path "humann3_genefam_cpm.tsv", emit: genefam
-    path "humann3_pathway_cpm.tsv", emit: pathway
+    path "humann3_genefamilies_cpm.tsv", emit: genefamilies
+    path "humann3_pathabundance_cpm.tsv", emit: pathabundance
 
     script:
     """
-    # Renormalise counts from RPK (reads per kilobase) to CPM (copies per million)
-    humann_renorm_table -i humann3_genefam_rpk.tsv -u "cpm" -o humann3_genefam_cpm.tsv
-    humann_renorm_table -i humann3_pathway_rpk.tsv -u "cpm" -o humann3_pathway_cpm.tsv
+    humann_renorm_table -i $genefamilies -u "cpm" -o humann3_genefamilies_cpm.tsv
+    humann_renorm_table -i $pathabundance -u "cpm" -o humann3_pathabundance_cpm.tsv
     """
 }
 
@@ -126,8 +126,7 @@ process HUMANN_REGROUP {
     humann_regroup_table --input $genefam -c ${humann_db}/utility_mapping/map_level4ec_uniref90.txt.gz --output humann2_ecs.tsv
     humann_regroup_table --input $genefam -c ${humann_db}/utility_mapping/map_ko_uniref90.txt.gz --output humann2_kos.tsv
     humann_regroup_table --input $genefam -c ${humann_db}/utility_mapping/map_pfam_uniref90.txt.gz --output humann2_pfam.tsv
-
-    humann_regroup_table --input demo_fastq/demo_genefamilies-cpm.tsv  --output demo_fastq/rxn-cpm.tsv --groups uniref90_rxn
+    #humann_regroup_table --input demo_fastq/demo_genefamilies-cpm.tsv  --output demo_fastq/rxn-cpm.tsv --groups uniref90_rxn
     """
 }
 
