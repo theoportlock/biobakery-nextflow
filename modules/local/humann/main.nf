@@ -70,15 +70,15 @@ process HUMANN_MERGE {
     path pathcoverage
 
     output:
-    path "humann3_genefamilies_rpk.tsv", emit: genefamilies
-    path "humann3_pathabundance_rpk.tsv", emit: pathabundance
-    path "humann3_pathcoverage.tsv", emit: pathcoverage
+    path "humann_genefamilies_rpk.tsv", emit: genefamilies
+    path "humann_pathabundance_rpk.tsv", emit: pathabundance
+    path "humann_pathcoverage.tsv", emit: pathcoverage
 
     script:
     """
-    humann_join_tables -i . -o humann3_genefamilies_rpk.tsv --file_name genefamilies
-    humann_join_tables -i . -o humann3_pathabundance_rpk.tsv --file_name pathabundance
-    humann_join_tables -i . -o humann3_pathcoverage.tsv --file_name pathcoverage
+    humann_join_tables -i . -o humann_genefamilies_rpk.tsv --file_name genefamilies
+    humann_join_tables -i . -o humann_pathabundance_rpk.tsv --file_name pathabundance
+    humann_join_tables -i . -o humann_pathcoverage.tsv --file_name pathcoverage
     """
 }
 
@@ -94,13 +94,13 @@ process HUMANN_RENORM {
     path pathabundance
 
     output:
-    path "humann3_genefamilies_cpm.tsv", emit: genefamilies
-    path "humann3_pathabundance_cpm.tsv", emit: pathabundance
+    path "humann_genefamilies_cpm.tsv", emit: genefamilies
+    path "humann_pathabundance_cpm.tsv", emit: pathabundance
 
     script:
     """
-    humann_renorm_table -i $genefamilies -u "cpm" -o humann3_genefamilies_cpm.tsv
-    humann_renorm_table -i $pathabundance -u "cpm" -o humann3_pathabundance_cpm.tsv
+    humann_renorm_table -i $genefamilies -u "cpm" -o humann_genefamilies_cpm.tsv
+    humann_renorm_table -i $pathabundance -u "cpm" -o humann_pathabundance_cpm.tsv
     """
 }
 
@@ -109,24 +109,27 @@ process HUMANN_REGROUP {
     label "process_single"
 
     tag "humann_regroup on $sample"
-    publishDir "$params.outdir/humann/regroup"
+    publishDir "$params.outdir/humann", mode: "copy", overwrite: true
     container "$params.humann_image"
 
     input:
-    path genefam
+    path genefamilies
     path humann_db
 
     output:
-    path "humann2_ecs.tsv"
-    path "humann2_kos.tsv"
-    path "humann2_pfam.tsv"
+    path "humann_level4ec.tsv", emit: ec
+    path "humann_ko.tsv", emit: ko
+    path "humann_pfam.tsv", emit: pfam
+    path "humann_go.tsv", emit: go
+    path "humann_eggnog.tsv", emit: eggnog
 
     script:
     """
-    humann_regroup_table --input $genefam -c ${humann_db}/utility_mapping/map_level4ec_uniref90.txt.gz --output humann2_ecs.tsv
-    humann_regroup_table --input $genefam -c ${humann_db}/utility_mapping/map_ko_uniref90.txt.gz --output humann2_kos.tsv
-    humann_regroup_table --input $genefam -c ${humann_db}/utility_mapping/map_pfam_uniref90.txt.gz --output humann2_pfam.tsv
-    #humann_regroup_table --input demo_fastq/demo_genefamilies-cpm.tsv  --output demo_fastq/rxn-cpm.tsv --groups uniref90_rxn
+    humann_regroup_table --input $genefamilies -c ${humann_db}/utility_mapping/map_level4ec_uniref90.txt.gz --output humann_level4ec.tsv
+    humann_regroup_table --input $genefamilies -c ${humann_db}/utility_mapping/map_ko_uniref90.txt.gz --output humann_ko.tsv
+    humann_regroup_table --input $genefamilies -c ${humann_db}/utility_mapping/map_pfam_uniref90.txt.gz --output humann_pfam.tsv
+    humann_regroup_table --input $genefamilies -c ${humann_db}/utility_mapping/map_go_uniref90.txt.gz --output humann_go.tsv
+    humann_regroup_table --input $genefamilies -c ${humann_db}/utility_mapping/map_eggnog_uniref90.txt.gz --output humann_eggnog.tsv
     """
 }
 
@@ -134,21 +137,40 @@ process HUMANN_RENAME {
     label "process_single"
 
     tag "humann_rename on $sample"
-    publishDir "$params.outdir/humann/rename"
+    publishDir "$params.outdir/humann", mode: "copy", overwrite: true
     container "$params.humann_image"
 
     input:
-    path rxn
+    path genefamilies
+    path pathcoverage
+    path pathabundance
+    path ec
+    path ko
+    path pfam
+    path go
 
     output:
-    path "humann3_rxn_rename.tsv"
+    path "humann_genefamilies_rename.tsv"
+    path "humann_pathcoverage_rename.tsv"
+    path "humann_pathabundance_rename.tsv"
+    path "humann_ec_rename.tsv"
+    path "humann_ko_rename_orthology.tsv"
+    path "humann_ko_rename_pathway.tsv"
+    path "humann_ko_rename_module.tsv"
+    path "humann_pfam_rename.tsv"
+    path "humann_go_rename.tsv"
 
     script:
     """
-    humann_rename_table \
-        --names metacyc-rxn \
-        --input $rxn \
-        --output ${sample}_rxn_rename.tsv
+    humann_rename_table -i $genefamilies -n metacyc-rxn -s -o humann_genefamilies_rename.tsv
+    humann_rename_table -i $pathcoverage -n metacyc-pwy -s -o humann_pathcoverage_rename.tsv
+    humann_rename_table -i $pathabundance -n metacyc-pwy -s -o humann_pathabundance_rename.tsv
+    humann_rename_table -i $ec -n ec -s -o humann_ec_rename.tsv
+    humann_rename_table -i $ko -n kegg-orthology -s -o humann_ko_rename_orthology.tsv
+    humann_rename_table -i $ko -n kegg-pathway -s -o humann_ko_rename_pathway.tsv
+    humann_rename_table -i $ko -n kegg-module -s -o humann_ko_rename_module.tsv
+    humann_rename_table -i $pfam -n pfam -s -o humann_pfam_rename.tsv
+    humann_rename_table -i $go -n infogo1000 -s -o humann_go_rename.tsv
     """
 }
 

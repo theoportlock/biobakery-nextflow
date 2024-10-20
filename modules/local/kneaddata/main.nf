@@ -68,10 +68,6 @@ process KNEADDATA_SUMMARY {
 
     script:
     """
-    mkdir knead_log_dir
-    cp $kneaddata_logs knead_log_dir
-    kneaddata_read_count_table
-    	--input knead_log_dir
-	--output kneaddata_summary.tsv
-    """  
+    kneaddata_read_count_table --input .  --output kneaddata_summary.tsv
+    """
 }

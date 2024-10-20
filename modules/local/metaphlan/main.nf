@@ -74,7 +74,7 @@ process METAPHLAN_MERGE {
     """
 }
 
-process METAPHLAN_TO_GTDB {
+process METAPHLAN_MERGE_GTDB {
     label "process_single"
 
     tag "metaphlan merge outputs"
@@ -82,16 +82,35 @@ process METAPHLAN_TO_GTDB {
     publishDir "$params.outdir/metaphlan", mode: "copy", overwrite: true
 
     input:
-    path merged_metaphlan_profile
+    path metaphlan_profiles
 
     output:
-    path "metaphlan_merged_profiles_GTDB.tsv"
+    path "metaphlan_merged_profiles_gtdb.tsv"
+
+    script:
+    """
+    merge_metaphlan_tables.py $metaphlan_profiles > metaphlan_merged_profiles_gtdb.tsv
+    """
+}
+
+process METAPHLAN_TO_GTDB {
+    label "process_single"
+
+    tag "convert metaphlan sgb to gtdb"
+    container "$params.metaphlan_image"
+
+    input:
+    val(sample)
+    path(profile)
+
+    output:
+    path "${sample}_profile_gtdb.tsv", emit: profile
 
     script:
     """
     sgb_to_gtdb_profile.py \
-        -i $merged_metaphlan_profile \
+        -i $profile \
 	-d ${params.metaphlan_db}.tsv \
-	-o metaphlan_merged_profiles_GTDB.tsv
+	-o ${sample}_profile_gtdb.tsv
     """
 }
