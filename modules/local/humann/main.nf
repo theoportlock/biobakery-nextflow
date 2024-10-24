@@ -1,7 +1,5 @@
 process HUMANN {
     label "process_medium"
-    // label "process_high"
-    // label "process_long"
     label "error_retry"
 
     tag "humann on $sample"
@@ -106,7 +104,8 @@ process HUMANN_RENORM {
 
 
 process HUMANN_REGROUP {
-    label "process_single"
+    label "process_medium"
+    label "error_retry"
 
     tag "humann_regroup on $sample"
     publishDir "$params.outdir/humann", mode: "copy", overwrite: true
@@ -134,7 +133,8 @@ process HUMANN_REGROUP {
 }
 
 process HUMANN_RENAME {
-    label "process_single"
+    label "process_medium"
+    label "error_retry"
 
     tag "humann_rename on $sample"
     publishDir "$params.outdir/humann", mode: "copy", overwrite: true
