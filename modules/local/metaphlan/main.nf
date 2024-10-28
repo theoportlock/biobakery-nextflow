@@ -89,7 +89,7 @@ process METAPHLAN_MERGE_GTDB {
 
     script:
     """
-    merge_metaphlan_tables.py $metaphlan_profiles > metaphlan_merged_profiles_gtdb.tsv
+    merge_metaphlan_tables.py --gtdb_profiles $metaphlan_profiles > metaphlan_merged_profiles_gtdb.tsv
     """
 }
 
