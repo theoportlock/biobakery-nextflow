@@ -1,7 +1,5 @@
 process HUMANN {
     label "process_medium"
-    // label "process_high"
-    // label "process_long"
     label "error_retry"
 
     tag "humann on $sample"
