@@ -57,6 +57,7 @@ process HUMANN_INIT {
 
 process HUMANN_MERGE {
     label "process_medium"
+    label "error_retry"
 
     tag "humann - merge outputs"
     publishDir "$params.outdir/humann", mode: "copy", overwrite: true
@@ -82,6 +83,7 @@ process HUMANN_MERGE {
 
 process HUMANN_RENORM {
     label "process_medium"
+    label "error_retry"
 
     tag "humann - renormalize to cpm"
     publishDir "$params.outdir/humann", mode: "copy", overwrite: true

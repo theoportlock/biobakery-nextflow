@@ -1,6 +1,5 @@
 process MERGE {
     label "process_single"
-    scratch true
 
     tag "merge reads for metaphlan and humann"
 
