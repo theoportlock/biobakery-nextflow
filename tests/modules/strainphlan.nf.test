@@ -1,0 +1,91 @@
+nextflow_process {
+
+    name "Test StrainPhlAn Module"
+    script "modules/local/strainphlan/main.nf"
+    
+    test("STRAINPHLAN_EXTRACT_MARKERS - should extract markers from SAM file") {
+        
+        when {
+            process {
+                """
+                input[0] = tuple('sample1', file('${projectDir}/testdata/sample1.sam.bz2'))
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.markers.size() == 1
+            with(process.out.markers.get(0)) {
+                assert it[0] == 'sample1'
+                assert it[1].name == 'sample1.pkl'
+            }
+        }
+    }
+
+    test("STRAINPHLAN_BUILD_TREES - should build phylogenetic tree for SGB") {
+        
+        when {
+            process {
+                """
+                input[0] = 't__SGB1234'
+                input[1] = [
+                    file('${projectDir}/testdata/sample1.pkl'),
+                    file('${projectDir}/testdata/sample2.pkl')
+                ]
+                input[2] = file('NO_REF')
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.tree.size() == 1
+            with(process.out.tree.get(0)) {
+                assert it[0] == 't__SGB1234'
+                assert it[1].name.contains('RAxML_bestTree')
+            }
+        }
+    }
+
+    test("STRAINPHLAN_TRANSMISSION - should analyze transmission events") {
+        
+        when {
+            process {
+                """
+                input[0] = tuple('t__SGB1234', file('${projectDir}/testdata/test_tree.tre'))
+                input[1] = file('${projectDir}/testdata/strain_metadata.tsv')
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.transmission.size() == 1
+            with(process.out.transmission.get(0)) {
+                assert it[0] == 't__SGB1234'
+                assert it[1].name == 'transmission_events.info'
+            }
+        }
+    }
+
+    test("STRAINPHLAN_AGGREGATE_RESULTS - should create summary CSV") {
+        
+        when {
+            process {
+                """
+                input[0] = [
+                    file('${projectDir}/testdata/t__SGB1234/transmission_events.info'),
+                    file('${projectDir}/testdata/t__SGB5678/transmission_events.info')
+                ]
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert path("${process.out[0]}").exists()
+            assert path("${process.out[0]}").name == 'strainphlan_transmission_summary.csv'
+        }
+    }
+}

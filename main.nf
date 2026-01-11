@@ -176,7 +176,7 @@ workflow {
             humann_input = merged_reads.join(precomputed_profiles)
                 .map { sample, reads, profile -> tuple(sample, reads, profile) }
             
-            humann_out = HUMANN_RUN(humann_input, humann_db, null, params.metaphlan_bowtie2_db_dir)
+            humann_out = HUMANN_RUN(humann_input, humann_db, params.metaphlan_bowtie2_db_dir, params.metaphlan_bowtie2_db_dir)
         }
         
         humann_merged = HUMANN_MERGE(

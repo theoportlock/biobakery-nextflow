@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "title": "BioBakery Nextflow Pipeline Parameters",
+  "description": "Metagenomic pipeline using bioBakery tools with StrainPhlAn support",
+  "properties": {
+    "input": {
+      "type": "string",
+      "description": "Path to input FASTQ files (paired-end)",
+      "pattern": ".*\\*.*\\{1,2\\}.*\\.fastq(\\.gz)?$"
+    },
+    "outdir": {
+      "type": "string",
+      "description": "Output directory",
+      "default": "output"
+    },
+    "k": {
+      "type": "boolean",
+      "description": "Enable KneadData",
+      "default": false
+    },
+    "m": {
+      "type": "boolean",
+      "description": "Enable MetaPhlAn",
+      "default": false
+    },
+    "h": {
+      "type": "boolean",
+      "description": "Enable HUMAnN",
+      "default": false
+    },
+    "s": {
+      "type": "boolean",
+      "description": "Enable StrainPhlAn (requires --m)",
+      "default": false
+    },
+    "sgb_list": {
+      "type": "string",
+      "description": "Path to file with SGB IDs (one per line) for StrainPhlAn",
+      "help_text": "Required when --s is enabled. Example: t__SGB1234"
+    },
+    "strain_metadata": {
+      "type": "string",
+      "description": "Path to metadata TSV for StrainPhlAn transmission analysis",
+      "help_text": "Required when --s is enabled. Must contain columns: sample_id, subject, relation, timepoint"
+    },
+    "reference_genomes_dir": {
+      "type": "string",
+      "description": "Directory with reference genome .fna files for StrainPhlAn (optional)"
+    },
+    "strain_threshold": {
+      "type": "number",
+      "description": "Distance threshold for transmission events in StrainPhlAn",
+      "default": 0.1,
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "min_samples_per_marker": {
+      "type": "integer",
+      "description": "Minimum samples a marker must appear in for StrainPhlAn",
+      "default": 2,
+      "minimum": 1
+    },
+    "min_markers_per_sample": {
+      "type": "integer",
+      "description": "Minimum markers required per sample for StrainPhlAn",
+      "default": 10,
+      "minimum": 1
+    },
+    "save_strain_distances": {
+      "type": "boolean",
+      "description": "Save pairwise distance matrices in StrainPhlAn",
+      "default": false
+    },
+    "metaphlan_db": {
+      "type": "string",
+      "description": "MetaPhlAn database name",
+      "default": "mpa_vJan25_CHOCOPhlAnSGB_202503"
+    },
+    "metaphlan_db_dir": {
+      "type": "string",
+      "description": "Path to existing MetaPhlAn database directory"
+    }
+  },
+  "required": ["input"]
+}

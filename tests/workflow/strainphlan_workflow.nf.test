@@ -1,0 +1,116 @@
+nextflow_workflow {
+
+    name "Test StrainPhlAn Workflow Integration"
+    script "main.nf"
+
+    test("Full StrainPhlAn workflow - MetaPhlAn to transmission analysis") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*R{1,2}*"
+                outdir = "${outputDir}"
+                m = true
+                s = true
+                sgb_list = "${projectDir}/testdata/sgb_list.txt"
+                strain_metadata = "${projectDir}/testdata/strain_metadata.tsv"
+                strain_threshold = 0.1
+                min_samples_per_marker = 1
+                min_markers_per_sample = 5
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+            }
+        }
+
+        then {
+            assert workflow.success
+            
+            // Check MetaPhlAn outputs
+            assert path("${params.outdir}/metaphlan").exists()
+            
+            // Check StrainPhlAn marker extraction
+            assert path("${params.outdir}/strainphlan/markers").exists()
+            
+            // Check StrainPhlAn tree outputs
+            def sgbs = path("${projectDir}/testdata/sgb_list.txt").readLines()
+            sgbs.each { sgb ->
+                if (!sgb.startsWith('#') && sgb.trim()) {
+                    assert path("${params.outdir}/strainphlan/${sgb}").exists()
+                }
+            }
+            
+            // Check aggregated summary
+            assert path("${params.outdir}/strainphlan/strainphlan_transmission_summary.csv").exists()
+        }
+    }
+
+    test("StrainPhlAn with reference genomes") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*R{1,2}*"
+                outdir = "${outputDir}"
+                m = true
+                s = true
+                sgb_list = "${projectDir}/testdata/sgb_list.txt"
+                strain_metadata = "${projectDir}/testdata/strain_metadata.tsv"
+                reference_genomes_dir = "${projectDir}/testdata/reference_genomes"
+                strain_threshold = 0.05
+                save_strain_distances = true
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+            }
+        }
+
+        then {
+            assert workflow.success
+            
+            // Check reference markers extracted
+            assert path("${params.outdir}/strainphlan/reference_markers").exists()
+            
+            // Check distance files saved
+            def sgbs = path("${projectDir}/testdata/sgb_list.txt").readLines()
+            sgbs.each { sgb ->
+                if (!sgb.startsWith('#') && sgb.trim()) {
+                    assert path("${params.outdir}/strainphlan/${sgb}/*.dist").list().size() > 0
+                }
+            }
+        }
+    }
+
+    test("StrainPhlAn error - missing metadata file") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*R{1,2}*"
+                outdir = "${outputDir}"
+                m = true
+                s = true
+                sgb_list = "${projectDir}/testdata/sgb_list.txt"
+                // strain_metadata intentionally missing
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+            }
+        }
+
+        then {
+            assert workflow.failed
+            assert workflow.errorReport.contains("strain_metadata")
+        }
+    }
+
+    test("StrainPhlAn error - requires MetaPhlAn") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*R{1,2}*"
+                outdir = "${outputDir}"
+                m = false
+                s = true
+                sgb_list = "${projectDir}/testdata/sgb_list.txt"
+                strain_metadata = "${projectDir}/testdata/strain_metadata.tsv"
+            }
+        }
+
+        then {
+            assert workflow.failed
+            assert workflow.errorReport.contains("StrainPhlAn requires MetaPhlAn")
+        }
+    }
+}
