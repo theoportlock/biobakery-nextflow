@@ -18,11 +18,11 @@ process KNEADDATA_RUN {
     """
     kneaddata \
     	--input ${reads[0]} \
-	--input ${reads[1]} \
-	--reference-db $kneaddata_db \
-	--processes ${task.cpus} \
-	--output-prefix ${sample}_kneaddata \
-	--output .
+        --input ${reads[1]} \
+        --reference-db $kneaddata_db \
+        --processes ${task.cpus} \
+        --output-prefix ${sample}_kneaddata \
+        --output .
     gzip *.fastq
     """  
 }

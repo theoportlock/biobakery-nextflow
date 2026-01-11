@@ -7,18 +7,18 @@ process HUMANN_RUN {
     container "$params.humann_image"
 
     input:
-    tuple val(sample), path(reads)
-    path profile
-    path metaphlan_db
+    tuple val(sample), path(reads), path(profile)
     path humann_db
+    val metaphlan_db, optional: true
+    val bowtie2_db_dir, optional: true
 
     output:
-    val sample
-    path "${sample}_genefamilies.tsv"  , emit: genefamilies
-    path "${sample}_pathabundance.tsv" , emit: pathabundance
-    path "${sample}_pathcoverage.tsv"  , emit: pathcoverage
+    tuple val(sample), path("${sample}_genefamilies.tsv"), emit: genefamilies
+    tuple val(sample), path("${sample}_pathabundance.tsv"), emit: pathabundance
+    tuple val(sample), path("${sample}_pathcoverage.tsv"), emit: pathcoverage
 
     script:
+    def metaphlan_opts = metaphlan_db ? "--bowtie2db $metaphlan_db" : "--bowtie2db $bowtie2_db_dir"
     """
     humann \
         --input ${reads} \
@@ -27,11 +27,12 @@ process HUMANN_RUN {
         --remove-temp-output \
         --nucleotide-database ${humann_db}/chocophlan \
         --protein-database ${humann_db}/uniref \
-	--metaphlan-options "--bowtie2db $metaphlan_db" \
+	    --metaphlan-options "$metaphlan_opts" \
         --output-basename $sample \
         --output .
     """
 }
+
 process HUMANN_INIT {
     label "process_single"
 

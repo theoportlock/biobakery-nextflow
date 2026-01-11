@@ -10,9 +10,7 @@ process METAPHLAN_RUN {
     path metaphlan_db
 
     output:
-    val sample, emit: sample
-    path "${sample}_profile.tsv", emit: profile
-    path "${sample}.mapout.bz2", optional: true
+    tuple val(sample), path("${sample}_profile.tsv"), path("${sample}.mapout.bz2"), emit: profile
 
     script:
     """
@@ -62,18 +60,15 @@ process METAPHLAN_MERGE {
     publishDir "$params.outdir/metaphlan", mode: "copy", overwrite: true
 
     input:
-    path manifest_list // Only the tiny text file is staged
+    path profiles
 
     output:
     path "metaphlan_merged_profiles.tsv"
 
     script:
     """
-    # merge_metaphlan_tables.py reads the absolute paths from the file.
-    # Since NeSI has a shared filesystem, the worker node can see the files
-    # directly in their original 'work/' folders.
     merge_metaphlan_tables.py \
-        -l ${manifest_list} \
+        -i ${profiles.join(',')} \
         -o metaphlan_merged_profiles.tsv
     """
 }
@@ -86,7 +81,7 @@ process METAPHLAN_MERGE_GTDB {
     publishDir "$params.outdir/metaphlan", mode: "copy", overwrite: true
 
     input:
-    path manifest_list
+    path profiles
 
     output:
     path "metaphlan_merged_profiles_gtdb.tsv"
@@ -95,7 +90,7 @@ process METAPHLAN_MERGE_GTDB {
     """
     merge_metaphlan_tables.py \
         --gtdb_profiles \
-        -l ${manifest_list} \
+        -i ${profiles.join(',')} \
         -o metaphlan_merged_profiles_gtdb.tsv
     """
 }
@@ -107,11 +102,10 @@ process METAPHLAN_TO_GTDB {
     container "$params.metaphlan_image"
 
     input:
-    val(sample)
-    path(profile)
+    tuple val(sample), path(profile), path(mapout)
 
     output:
-    path "${sample}_profile_gtdb.tsv", emit: profile
+    tuple val(sample), path("${sample}_profile_gtdb.tsv"), path(mapout), emit: profile
 
     script:
     """

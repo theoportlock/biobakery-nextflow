@@ -17,7 +17,7 @@ include {
 } from './modules/local/metaphlan/main.nf'
 
 include { 
-    HUMANN_RUN; 
+    HUMANN_RUN;
     HUMANN_INIT; 
     HUMANN_MERGE; 
     HUMANN_RENORM; 
@@ -44,6 +44,11 @@ workflow {
     // Create a variable for merged_reads that will be used by both Metaphlan and Humann
     def merged_reads
 
+    // Create variables to store metaphlan outputs and database
+    def metaphlan_out
+    def metaphlan_db
+    def precomputed_profiles
+
     // Initialize Metaphlan if requested
     if (params.m) {
         metaphlan_db = METAPHLAN_INIT(params.metaphlan_db)
@@ -51,32 +56,86 @@ workflow {
         merged_reads = params.k ? MERGE(kneaddata_out.cleaned_reads) : MERGE(read_pairs)
         
         metaphlan_out = METAPHLAN_RUN(merged_reads, metaphlan_db)
-	metaphlan_profiles_list = metaphlan_out.profile
-		.map { it.toAbsolutePath().toString() }
-		.collectFile(name: 'metaphlan_abs_paths.list', newLine: true, sort: true)
-	METAPHLAN_MERGE(metaphlan_profiles_list)
+	
+	// Extract profiles and mapouts from metaphlan tuple output
+	metaphlan_profiles = metaphlan_out.profile.map { sample, profile, mapout -> profile }
+	metaphlan_mapouts = metaphlan_out.profile.map { sample, profile, mapout -> mapout }
+	
+	METAPHLAN_MERGE(metaphlan_profiles.collect())
 
-        metaphlan_to_gtdb_out = METAPHLAN_TO_GTDB(metaphlan_out.sample, metaphlan_out.profile)
-	metaphlan_profiles_gtdb_list = metaphlan_to_gtdb_out.profile
-		.map { it.toAbsolutePath().toString() }
-		.collectFile(name: 'metaphlan_gtdb_abs_paths.list', newLine: true, sort: true)
-	METAPHLAN_MERGE_GTDB(metaphlan_profiles_gtdb_list)
+        metaphlan_to_gtdb_out = METAPHLAN_TO_GTDB(metaphlan_out.profile)
+	metaphlan_profiles_gtdb = metaphlan_to_gtdb_out.profile.map { sample, profile, mapout -> profile }
+	METAPHLAN_MERGE_GTDB(metaphlan_profiles_gtdb.collect())
     }
 
-    // Initialize HUMANN if requested – note HUMANN requires Metaphlan output
-    if (params.h) {
-        // Enforce that HUMANN cannot run without Metaphlan
-        if ( !params.m ) {
-            error "HUMANN requires Metaphlan to be enabled. Please use '--m' along with '--h'."
+    // Load pre-computed metaphlan profiles if humann is requested without metaphlan
+    if (params.h && !params.m) {
+        if (params.metaphlan_profile_dir == null || params.metaphlan_profile_dir.isEmpty()) {
+            error "HUMANN requires either Metaphlan to be enabled (--m) or pre-computed profiles directory (--metaphlan_profile_dir) to be specified."
+        }
+        if (params.metaphlan_bowtie2_db_dir == null || params.metaphlan_bowtie2_db_dir.isEmpty()) {
+            error "HUMANN requires MetaPhlAn bowtie2 database directory (--metaphlan_bowtie2_db_dir) to be specified."
         }
 
-        humann_db = HUMANN_INIT()
-        humann_out = HUMANN_RUN(merged_reads, metaphlan_out.profile, metaphlan_db, humann_db)
+        // Load pre-computed profiles
+        precomputed_profiles = Channel.fromPath("${params.metaphlan_profile_dir}/*_kneaddata_paired_profile.tsv")
+            .map { profile_file ->
+                def sample_id = profile_file.name.replaceAll(/_kneaddata_paired_profile\.tsv$/, '')
+                tuple(sample_id, profile_file)
+            }
+
+        // Validate that all input samples have matching profiles
+        read_pair_samples = read_pairs.map { sample, reads -> sample }
+        profile_samples = precomputed_profiles.map { sample, profile -> sample }
+        
+        // Collect samples and validate
+        read_pair_samples.collect().combine(profile_samples.collect()).map { read_samples, profile_samples ->
+            def missing_profiles = read_samples - profile_samples
+            def extra_profiles = profile_samples - read_samples
+            
+            if (missing_profiles.size() > 0) {
+                error "The following input samples do not have matching metaphlan profiles: ${missing_profiles.join(', ')}"
+            }
+            if (extra_profiles.size() > 0) {
+                log.warn "The following metaphlan profiles do not have matching input samples (will be ignored): ${extra_profiles.join(', ')}"
+            }
+        }.subscribe()
+
+        // Merge reads if kneaddata was run, otherwise use raw reads
+        merged_reads = params.k ? MERGE(kneaddata_out.cleaned_reads) : MERGE(read_pairs)
+    }
+
+    // Initialize HUMANN if requested
+    if (params.h) {
+        // Determine metaphlan database and profiles based on whether metaphlan was run
+        if (params.m) {
+            // Using metaphlan output
+            humann_db = HUMANN_INIT()
+            
+            // Join merged reads with metaphlan profiles by sample ID
+            humann_input = merged_reads.join(metaphlan_out.profile)
+                .map { sample, reads, profile, mapout -> tuple(sample, reads, profile) }
+            
+            humann_out = HUMANN_RUN(humann_input, humann_db, metaphlan_db)
+        } else {
+            // Using pre-computed profiles
+            if (params.metaphlan_bowtie2_db_dir == null || params.metaphlan_bowtie2_db_dir.isEmpty()) {
+                error "HUMANN requires MetaPhlAn bowtie2 database directory (--metaphlan_bowtie2_db_dir) when using pre-computed profiles."
+            }
+            
+            humann_db = HUMANN_INIT()
+            
+            // Match precomputed profiles with merged reads by sample ID
+            humann_input = merged_reads.join(precomputed_profiles)
+                .map { sample, reads, profile -> tuple(sample, reads, profile) }
+            
+            humann_out = HUMANN_RUN(humann_input, humann_db, null, params.metaphlan_bowtie2_db_dir)
+        }
         
         humann_merged = HUMANN_MERGE(
-            humann_out.genefamilies.collect(),
-            humann_out.pathabundance.collect(),
-            humann_out.pathcoverage.collect()
+            humann_out.genefamilies.map { sample, file -> file }.collect(),
+            humann_out.pathabundance.map { sample, file -> file }.collect(),
+            humann_out.pathcoverage.map { sample, file -> file }.collect()
         )
         humann_renorm  = HUMANN_RENORM(humann_merged.genefamilies, humann_merged.pathabundance)
         humann_regroup = HUMANN_REGROUP(humann_renorm.genefamilies, humann_db)
