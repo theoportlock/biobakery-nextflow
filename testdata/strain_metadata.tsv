@@ -1,0 +1,7 @@
+sample_id	subject	relation	timepoint
+donor_1	donor	donor	0
+pre_fmt_1	recipient	baseline	0
+post_fmt_1	recipient	followup	30
+donor_2	donor	donor	0
+pre_fmt_2	recipient	baseline	0
+post_fmt_2	recipient	followup	30

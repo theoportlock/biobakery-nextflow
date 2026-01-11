@@ -1,0 +1,9 @@
+# Example SGB list for StrainPhlAn analysis
+# One SGB ID per line
+# Lines starting with # are ignored
+# Format: t__SGBXXXXX
+
+# Example engraftment triad species
+t__SGB1234
+t__SGB5678
+t__SGB9012

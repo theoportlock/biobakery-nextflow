@@ -2,7 +2,7 @@ process METAPHLAN_RUN {
     label "process_medium"
 
     tag "metaphlan on $sample"
-    publishDir "$params.outdir/metaphlan", pattern: "{*.tsv,*.mapout.bz2}", mode: "copy"
+    publishDir "$params.outdir/metaphlan", pattern: "{*.tsv,*.mapout.bz2,*.sam.bz2}", mode: "copy"
     container "$params.metaphlan_image"
 
     input:
@@ -11,6 +11,7 @@ process METAPHLAN_RUN {
 
     output:
     tuple val(sample), path("${sample}_profile.tsv"), path("${sample}.mapout.bz2"), emit: profile
+    tuple val(sample), path("${sample}.sam.bz2"), emit: samout
 
     script:
     """
@@ -19,7 +20,8 @@ process METAPHLAN_RUN {
         --input_type fastq \
         --db_dir ${metaphlan_db} \
         --index ${params.metaphlan_db} \
-        --mapout ${sample}.mapout.bz2 \
+        --bowtie2out ${sample}.mapout.bz2 \
+        --samout ${sample}.sam.bz2 \
         --nproc ${task.cpus} \
         -o ${sample}_profile.tsv
     """

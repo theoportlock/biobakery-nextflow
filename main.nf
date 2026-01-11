@@ -16,6 +16,14 @@ include {
     METAPHLAN_MERGE_GTDB 
 } from './modules/local/metaphlan/main.nf'
 
+include {
+    STRAINPHLAN_EXTRACT_MARKERS;
+    STRAINPHLAN_EXTRACT_REF_MARKERS;
+    STRAINPHLAN_BUILD_TREES;
+    STRAINPHLAN_TRANSMISSION;
+    STRAINPHLAN_AGGREGATE_RESULTS
+} from './modules/local/strainphlan/main.nf'
+
 include { 
     HUMANN_RUN;
     HUMANN_INIT; 
@@ -66,6 +74,62 @@ workflow {
         metaphlan_to_gtdb_out = METAPHLAN_TO_GTDB(metaphlan_out.profile)
 	metaphlan_profiles_gtdb = metaphlan_to_gtdb_out.profile.map { sample, profile, mapout -> profile }
 	METAPHLAN_MERGE_GTDB(metaphlan_profiles_gtdb.collect())
+    }
+
+    // Run StrainPhlAn if requested and MetaPhlAn was enabled
+    if (params.s && params.m) {
+        // Validate required parameters
+        if (params.sgb_list == null || params.sgb_list.isEmpty()) {
+            error "StrainPhlAn requires --sgb_list to be specified (file with SGB IDs, one per line)"
+        }
+        if (params.strain_metadata == null || params.strain_metadata.isEmpty()) {
+            error "StrainPhlAn requires --strain_metadata to be specified (TSV with sample_id, subject, relation, timepoint columns)"
+        }
+
+        // Extract markers from SAM files
+        strainphlan_markers = STRAINPHLAN_EXTRACT_MARKERS(metaphlan_out.samout)
+
+        // Extract reference markers if reference genomes are provided
+        def ref_markers
+        if (params.reference_genomes_dir != null && !params.reference_genomes_dir.isEmpty()) {
+            ref_genomes = Channel.fromPath(params.reference_genomes_dir)
+            ref_markers = STRAINPHLAN_EXTRACT_REF_MARKERS(ref_genomes).ref_markers
+        } else {
+            // Create empty channel if no references
+            ref_markers = Channel.fromPath('NO_REF')
+        }
+
+        // Read SGB list and create channel
+        sgb_list = Channel.fromPath(params.sgb_list)
+            .splitText()
+            .map { it.trim() }
+            .filter { it.length() > 0 && !it.startsWith('#') }
+
+        // Collect all markers into a single directory
+        all_markers = strainphlan_markers.map { sample, pkl -> pkl }.collect()
+
+        // Build trees for each SGB
+        strainphlan_trees = STRAINPHLAN_BUILD_TREES(
+            sgb_list,
+            all_markers,
+            ref_markers.collect()
+        )
+
+        // Load metadata
+        metadata = Channel.fromPath(params.strain_metadata)
+
+        // Run transmission analysis for each SGB
+        strainphlan_transmission = STRAINPHLAN_TRANSMISSION(
+            strainphlan_trees.tree,
+            metadata.first()
+        )
+
+        // Aggregate results
+        STRAINPHLAN_AGGREGATE_RESULTS(
+            strainphlan_transmission.transmission.map { sgb, info -> info }.collect()
+        )
+    } else if (params.s && !params.m) {
+        error "StrainPhlAn requires MetaPhlAn to be enabled (--m flag must be set)"
     }
 
     // Load pre-computed metaphlan profiles if humann is requested without metaphlan
