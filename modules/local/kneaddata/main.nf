@@ -1,4 +1,4 @@
-process KNEADDATA {
+process KNEADDATA_RUN {
     label "process_medium"
     label "error_retry"
 

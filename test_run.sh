@@ -1,9 +1,16 @@
 #!/bin/bash
+
+config='conf/nesi.config'
+
+module load Nextflow/23.10.0
+
 nextflow main.nf \
-	-c conf/laptop.config \
+	-c $config \
 	-resume \
 	-bg \
-	--input 'biobakery-nextflow/testdata/*R{1,2}*' \
+	-with-tower \
+	--project uoa03941 \
+	--input 'testdata/*R{1,2}*' \
 	--k \
 	--m \
 	--h

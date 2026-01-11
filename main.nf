@@ -3,13 +3,13 @@
 nextflow.enable.dsl=2
 
 include { 
-    KNEADDATA; 
+    KNEADDATA_RUN; 
     KNEADDATA_INIT; 
     KNEADDATA_SUMMARY 
 } from './modules/local/kneaddata/main.nf'
 
 include { 
-    METAPHLAN; 
+    METAPHLAN_RUN; 
     METAPHLAN_INIT; 
     METAPHLAN_MERGE; 
     METAPHLAN_TO_GTDB; 
@@ -17,7 +17,7 @@ include {
 } from './modules/local/metaphlan/main.nf'
 
 include { 
-    HUMANN; 
+    HUMANN_RUN; 
     HUMANN_INIT; 
     HUMANN_MERGE; 
     HUMANN_RENORM; 
@@ -37,7 +37,7 @@ workflow {
     // Initialize kneaddata if requested
     if (params.k) {
         kneaddata_db  = KNEADDATA_INIT(params.kneaddata_db)
-        kneaddata_out = KNEADDATA(read_pairs, kneaddata_db)
+        kneaddata_out = KNEADDATA_RUN(read_pairs, kneaddata_db)
         KNEADDATA_SUMMARY(kneaddata_out.log.collect())
     }
 
@@ -50,11 +50,17 @@ workflow {
         // If kneaddata was run, merge the cleaned reads; otherwise merge the original pairs.
         merged_reads = params.k ? MERGE(kneaddata_out.cleaned_reads) : MERGE(read_pairs)
         
-        metaphlan_out = METAPHLAN(merged_reads, metaphlan_db)
-        METAPHLAN_MERGE(metaphlan_out.profile.collect())
-        
+        metaphlan_out = METAPHLAN_RUN(merged_reads, metaphlan_db)
+	metaphlan_profiles_list = metaphlan_out.profile
+		.map { it.toAbsolutePath().toString() }
+		.collectFile(name: 'metaphlan_abs_paths.list', newLine: true, sort: true)
+	METAPHLAN_MERGE(metaphlan_profiles_list)
+
         metaphlan_to_gtdb_out = METAPHLAN_TO_GTDB(metaphlan_out.sample, metaphlan_out.profile)
-        METAPHLAN_MERGE_GTDB(metaphlan_to_gtdb_out.profile.collect())
+	metaphlan_profiles_gtdb_list = metaphlan_to_gtdb_out.profile
+		.map { it.toAbsolutePath().toString() }
+		.collectFile(name: 'metaphlan_gtdb_abs_paths.list', newLine: true, sort: true)
+	METAPHLAN_MERGE_GTDB(metaphlan_profiles_gtdb_list)
     }
 
     // Initialize HUMANN if requested – note HUMANN requires Metaphlan output
@@ -65,7 +71,7 @@ workflow {
         }
 
         humann_db = HUMANN_INIT()
-        humann_out = HUMANN(merged_reads, metaphlan_out.profile, metaphlan_db, humann_db)
+        humann_out = HUMANN_RUN(merged_reads, metaphlan_out.profile, metaphlan_db, humann_db)
         
         humann_merged = HUMANN_MERGE(
             humann_out.genefamilies.collect(),

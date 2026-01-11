@@ -1,4 +1,4 @@
-process HUMANN {
+process HUMANN_RUN {
     label "process_medium"
     label "error_retry"
 
