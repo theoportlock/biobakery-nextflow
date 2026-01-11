@@ -1,8 +1,8 @@
-process METAPHLAN {
+process METAPHLAN_RUN {
     label "process_medium"
 
     tag "metaphlan on $sample"
-    publishDir "$params.outdir/metaphlan", pattern: "{*.tsv}"
+    publishDir "$params.outdir/metaphlan", pattern: "{*.tsv,*.mapout.bz2}", mode: "copy"
     container "$params.metaphlan_image"
 
     input:
@@ -12,24 +12,24 @@ process METAPHLAN {
     output:
     val sample, emit: sample
     path "${sample}_profile.tsv", emit: profile
-    path "${sample}.sam.bz2"
+    path "${sample}.mapout.bz2", optional: true
 
     script:
     """
     metaphlan \
-        --bowtie2out ${sample}_bowtie2.tsv \
-        --samout ${sample}.sam.bz2 \
-        --input_type fastq \
-        --nproc ${task.cpus} \
-        --bowtie2db $metaphlan_db \
-        --index ${params.metaphlan_db} \
         ${reads} \
-        ${sample}_profile.tsv
+        --input_type fastq \
+        --db_dir ${metaphlan_db} \
+        --index ${params.metaphlan_db} \
+        --mapout ${sample}.mapout.bz2 \
+        --nproc ${task.cpus} \
+        -o ${sample}_profile.tsv
     """
 }
 
 process METAPHLAN_INIT {
     label "process_single"
+    label "process_extra_long"
 
     tag "metaphlan install database"
     container "$params.metaphlan_image"
@@ -45,8 +45,7 @@ process METAPHLAN_INIT {
         """
 	metaphlan \
 	    --install \
-	    --index ${metaphlan_db} \
-	    --bowtie2db metaphlan_db
+	    --db_dir metaphlan_db
         """
     } else {
         """
@@ -57,39 +56,47 @@ process METAPHLAN_INIT {
 
 process METAPHLAN_MERGE {
     label "process_single"
-
     tag "metaphlan merge outputs"
+
     container "$params.metaphlan_image"
     publishDir "$params.outdir/metaphlan", mode: "copy", overwrite: true
 
     input:
-    path metaphlan_profiles
+    path manifest_list // Only the tiny text file is staged
 
     output:
     path "metaphlan_merged_profiles.tsv"
 
     script:
     """
-    merge_metaphlan_tables.py $metaphlan_profiles > metaphlan_merged_profiles.tsv
+    # merge_metaphlan_tables.py reads the absolute paths from the file.
+    # Since NeSI has a shared filesystem, the worker node can see the files
+    # directly in their original 'work/' folders.
+    merge_metaphlan_tables.py \
+        -l ${manifest_list} \
+        -o metaphlan_merged_profiles.tsv
     """
 }
 
 process METAPHLAN_MERGE_GTDB {
     label "process_single"
+    tag "metaphlan merge (GTDB)"
 
-    tag "metaphlan merge outputs"
     container "$params.metaphlan_image"
     publishDir "$params.outdir/metaphlan", mode: "copy", overwrite: true
 
     input:
-    path metaphlan_profiles
+    path manifest_list
 
     output:
     path "metaphlan_merged_profiles_gtdb.tsv"
 
     script:
     """
-    merge_metaphlan_tables.py --gtdb_profiles $metaphlan_profiles > metaphlan_merged_profiles_gtdb.tsv
+    merge_metaphlan_tables.py \
+        --gtdb_profiles \
+        -l ${manifest_list} \
+        -o metaphlan_merged_profiles_gtdb.tsv
     """
 }
 
@@ -110,7 +117,6 @@ process METAPHLAN_TO_GTDB {
     """
     sgb_to_gtdb_profile.py \
         -i $profile \
-	-d ${params.metaphlan_db}.tsv \
 	-o ${sample}_profile_gtdb.tsv
     """
 }
