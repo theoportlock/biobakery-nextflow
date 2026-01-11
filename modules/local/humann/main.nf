@@ -9,8 +9,8 @@ process HUMANN_RUN {
     input:
     tuple val(sample), path(reads), path(profile)
     path humann_db
-    val metaphlan_db, optional: true
-    val bowtie2_db_dir, optional: true
+    val metaphlan_db
+    val bowtie2_db_dir
 
     output:
     tuple val(sample), path("${sample}_genefamilies.tsv"), emit: genefamilies
