@@ -1,0 +1,39 @@
+nextflow_workflow {
+
+    name "Test KneadData Workflow"
+    script "main.nf"
+
+    test("KneadData - host read removal") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/FG00004_S26_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                k = true
+                kneaddata_db_dir = "${projectDir}/testdata/kneaddata_db"
+                kneaddata_db = "test_host"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+    
+    test("KneadData - multiple samples") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                k = true
+                kneaddata_db_dir = "${projectDir}/testdata/kneaddata_db"
+                kneaddata_db = "test_host"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

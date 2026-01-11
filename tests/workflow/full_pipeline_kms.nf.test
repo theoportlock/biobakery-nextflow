@@ -1,0 +1,27 @@
+nextflow_workflow {
+
+    name "Test Full Pipeline K+M+S"
+    script "main.nf"
+
+    test("K+M+S - complete strain profiling pipeline") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                k = true
+                m = true
+                s = true
+                kneaddata_db_dir = "${projectDir}/testdata/kneaddata_db"
+                kneaddata_db = "test_host"
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+                sgb_list = "${projectDir}/testdata/sgb_list.txt"
+                strain_metadata = "${projectDir}/testdata/strain_metadata.tsv"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

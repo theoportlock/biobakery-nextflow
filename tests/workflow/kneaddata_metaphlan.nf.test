@@ -1,0 +1,24 @@
+nextflow_workflow {
+
+    name "Test KneadData + MetaPhlAn Integration"
+    script "main.nf"
+
+    test("K+M - host removal and taxonomic profiling") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                k = true
+                m = true
+                kneaddata_db_dir = "${projectDir}/testdata/kneaddata_db"
+                kneaddata_db = "test_host"
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

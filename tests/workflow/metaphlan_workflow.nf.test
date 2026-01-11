@@ -1,0 +1,37 @@
+nextflow_workflow {
+
+    name "Test MetaPhlAn Workflow"
+    script "main.nf"
+
+    test("MetaPhlAn - taxonomic profiling") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/FG00004_S26_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                m = true
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+    
+    test("MetaPhlAn - multiple samples") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                m = true
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

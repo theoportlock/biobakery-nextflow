@@ -1,0 +1,47 @@
+nextflow_workflow {
+
+    name "Test Full Pipeline K+M+H"
+    script "main.nf"
+
+    test("K+M+H - complete functional profiling pipeline") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                k = true
+                m = true
+                h = true
+                kneaddata_db_dir = "${projectDir}/testdata/kneaddata_db"
+                kneaddata_db = "test_host"
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+                humann_db_dir = "${projectDir}/testdata/humann_demo_db"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+    
+    test("K+M+H - single sample complete pipeline") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/FG00004_S26_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                k = true
+                m = true
+                h = true
+                kneaddata_db_dir = "${projectDir}/testdata/kneaddata_db"
+                kneaddata_db = "test_host"
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+                humann_db_dir = "${projectDir}/testdata/humann_demo_db"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

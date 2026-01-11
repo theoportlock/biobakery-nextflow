@@ -1,0 +1,23 @@
+nextflow_workflow {
+
+    name "Test HUMAnN Workflow"
+    script "main.nf"
+
+    test("HUMAnN - functional profiling with precomputed profiles") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/FG00004_S26_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                h = true
+                humann_db_dir = "${projectDir}/testdata/humann_demo_db"
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+                precomputed_metaphlan_dir = "${projectDir}/testdata/precomputed_metaphlan"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

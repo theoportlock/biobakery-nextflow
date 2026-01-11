@@ -1,0 +1,165 @@
+nextflow_workflow {
+
+    name "Test METAPHLAN_RUN Process"
+    script "tests/modules/metaphlan_test_workflow.nf"
+    workflow "test_metaphlan_run"
+    
+    test("METAPHLAN_RUN - profile merged reads (Apptainer)") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                metaphlan_image = 'docker://biobakery/metaphlan:latest'
+                metaphlan_db = 'mpa_vJan25_CHOCOPhlAnSGB_202503'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/testdata/*_merged.fastq.gz')
+                    .map { file -> tuple(file.simpleName.replaceAll('_merged', ''), file) }
+                    .first()
+                input[1] = file('${projectDir}/testdata/metaphlan_db')
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+    
+    test("METAPHLAN_RUN - profile merged reads (Docker)") {
+        config "conf/test.docker.config"
+        
+        when {
+            params {
+                metaphlan_image = 'docker://biobakery/metaphlan:latest'
+                metaphlan_db = 'mpa_vJan25_CHOCOPhlAnSGB_202503'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/testdata/*_merged.fastq.gz')
+                    .map { file -> tuple(file.simpleName.replaceAll('_merged', ''), file) }
+                    .first()
+                input[1] = file('${projectDir}/testdata/metaphlan_db')
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test METAPHLAN_INIT Process"
+    script "tests/modules/metaphlan_test_workflow.nf"
+    workflow "test_metaphlan_init"
+    
+    test("METAPHLAN_INIT - symlink existing database") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+                metaphlan_image = 'docker://biobakery/metaphlan:latest'
+            }
+            workflow {
+                """
+                input[0] = 'mpa_vJan25_CHOCOPhlAnSGB_202503'
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test METAPHLAN_MERGE Process"
+    script "tests/modules/metaphlan_test_workflow.nf"
+    workflow "test_metaphlan_merge"
+    
+    test("METAPHLAN_MERGE - merge multiple profiles") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                metaphlan_image = 'docker://biobakery/metaphlan:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/testdata/precomputed_metaphlan/metaphlan/*_profile.tsv')
+                    .collect()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test METAPHLAN_TO_GTDB Process"
+    script "tests/modules/metaphlan_test_workflow.nf"
+    workflow "test_metaphlan_to_gtdb"
+    
+    test("METAPHLAN_TO_GTDB - convert SGB to GTDB") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                metaphlan_image = 'docker://biobakery/metaphlan:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/testdata/precomputed_metaphlan/metaphlan/*_profile.tsv')
+                    .map { profile -> 
+                        def sample = profile.simpleName.replaceAll('_profile', '')
+                        def mapout = file("${projectDir}/testdata/precomputed_metaphlan/metaphlan/\${sample}.mapout.bz2")
+                        tuple(sample, profile, mapout)
+                    }
+                    .first()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test METAPHLAN_MERGE_GTDB Process"
+    script "tests/modules/metaphlan_test_workflow.nf"
+    workflow "test_metaphlan_merge_gtdb"
+    
+    test("METAPHLAN_MERGE_GTDB - merge GTDB profiles") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                metaphlan_image = 'docker://biobakery/metaphlan:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/testdata/precomputed_metaphlan/metaphlan/*_profile_gtdb.tsv')
+                    .collect()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

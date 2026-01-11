@@ -3,3 +3,15 @@ test/output/*
 work/*
 output/*
 venv/
+
+# Test databases (created by setup scripts)
+testdata/kneaddata_db/
+testdata/metaphlan_db/
+testdata/humann_demo_db/
+testdata/precomputed_metaphlan/
+
+# nf-test outputs
+.nf-test/
+
+# Test output directories
+test_output*/

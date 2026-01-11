@@ -1,0 +1,23 @@
+nextflow_workflow {
+
+    name "Test MetaPhlAn + HUMAnN Integration"
+    script "main.nf"
+
+    test("M+H - taxonomic and functional profiling") {
+        
+        when {
+            params {
+                input = "${projectDir}/testdata/*_L001_R{1,2}_*.fastq.gz"
+                outdir = "${outputDir}"
+                m = true
+                h = true
+                metaphlan_db_dir = "${projectDir}/testdata/metaphlan_db"
+                humann_db_dir = "${projectDir}/testdata/humann_demo_db"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

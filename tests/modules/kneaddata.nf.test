@@ -1,0 +1,102 @@
+nextflow_workflow {
+
+    name "Test KNEADDATA_RUN Process"
+    script "tests/modules/kneaddata_test_workflow.nf"
+    workflow "test_kneaddata_run"
+    
+    test("KNEADDATA_RUN - clean host contamination (Apptainer)") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                kneaddata_image = 'docker://biobakery/kneaddata:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromFilePairs('${projectDir}/testdata/*_R{1,2}_001.fastq.gz', size: 2)
+                    .first()
+                input[1] = file('${projectDir}/testdata/kneaddata_db')
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+    
+    test("KNEADDATA_RUN - clean host contamination (Docker)") {
+        config "conf/test.docker.config"
+        
+        when {
+            params {
+                kneaddata_image = 'docker://biobakery/kneaddata:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromFilePairs('${projectDir}/testdata/*_R{1,2}_001.fastq.gz', size: 2)
+                    .first()
+                input[1] = file('${projectDir}/testdata/kneaddata_db')
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test KNEADDATA_INIT Process"
+    script "tests/modules/kneaddata_test_workflow.nf"
+    workflow "test_kneaddata_init"
+    
+    test("KNEADDATA_INIT - symlink existing database") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                kneaddata_db_dir = "${projectDir}/testdata/kneaddata_db"
+                kneaddata_image = 'docker://biobakery/kneaddata:latest'
+            }
+            workflow {
+                """
+                input[0] = 'test_host'
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test KNEADDATA_SUMMARY Process"
+    script "tests/modules/kneaddata_test_workflow.nf"
+    workflow "test_kneaddata_summary"
+    
+    test("KNEADDATA_SUMMARY - aggregate log files") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                kneaddata_image = 'docker://biobakery/kneaddata:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/output/kneaddata/*.log')
+                    .collect()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

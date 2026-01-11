@@ -1,0 +1,174 @@
+nextflow_workflow {
+
+    name "Test HUMANN_RUN Process"
+    script "tests/modules/humann_test_workflow.nf"
+    workflow "test_humann_run"
+    
+    test("HUMANN_RUN - generate functional profiles (Apptainer)") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                humann_image = 'docker://biobakery/humann:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/testdata/*_merged.fastq.gz')
+                    .map { merged -> 
+                        def sample = merged.simpleName.replaceAll('_merged', '')
+                        def profile = file("${projectDir}/testdata/precomputed_metaphlan/metaphlan/\${sample}_profile.tsv")
+                        tuple(sample, merged, profile)
+                    }
+                    .first()
+                input[1] = file('${projectDir}/testdata/humann_demo_db')
+                input[2] = 'mpa_vJan25_CHOCOPhlAnSGB_202503'
+                input[3] = '${projectDir}/testdata/metaphlan_db'
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+    
+    test("HUMANN_RUN - generate functional profiles (Docker)") {
+        config "conf/test.docker.config"
+        
+        when {
+            params {
+                humann_image = 'docker://biobakery/humann:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/testdata/*_merged.fastq.gz')
+                    .map { merged -> 
+                        def sample = merged.simpleName.replaceAll('_merged', '')
+                        def profile = file("${projectDir}/testdata/precomputed_metaphlan/metaphlan/\${sample}_profile.tsv")
+                        tuple(sample, merged, profile)
+                    }
+                    .first()
+                input[1] = file('${projectDir}/testdata/humann_demo_db')
+                input[2] = 'mpa_vJan25_CHOCOPhlAnSGB_202503'
+                input[3] = '${projectDir}/testdata/metaphlan_db'
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test HUMANN_INIT Process"
+    script "tests/modules/humann_test_workflow.nf"
+    workflow "test_humann_init"
+    
+    test("HUMANN_INIT - symlink existing database") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                humann_db_dir = "${projectDir}/testdata/humann_demo_db"
+                humann_image = 'docker://biobakery/humann:latest'
+            }
+            workflow {
+                """
+                // No input needed
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test HUMANN_MERGE Process"
+    script "tests/modules/humann_test_workflow.nf"
+    workflow "test_humann_merge"
+    
+    test("HUMANN_MERGE - merge outputs from multiple samples") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                humann_image = 'docker://biobakery/humann:latest'
+            }
+            workflow {
+                """
+                input[0] = Channel.fromPath('${projectDir}/testdata/humann_outputs/*_genefamilies.tsv')
+                    .collect()
+                input[1] = Channel.fromPath('${projectDir}/testdata/humann_outputs/*_pathabundance.tsv')
+                    .collect()
+                input[2] = Channel.fromPath('${projectDir}/testdata/humann_outputs/*_pathcoverage.tsv')
+                    .collect()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test HUMANN_RENORM Process"
+    script "tests/modules/humann_test_workflow.nf"
+    workflow "test_humann_renorm"
+    
+    test("HUMANN_RENORM - renormalize to CPM") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                humann_image = 'docker://biobakery/humann:latest'
+            }
+            workflow {
+                """
+                input[0] = file('${projectDir}/testdata/humann_outputs/humann_genefamilies_rpk.tsv')
+                input[1] = file('${projectDir}/testdata/humann_outputs/humann_pathabundance_rpk.tsv')
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
+
+nextflow_workflow {
+
+    name "Test HUMANN_REGROUP Process"
+    script "tests/modules/humann_test_workflow.nf"
+    workflow "test_humann_regroup"
+    
+    test("HUMANN_REGROUP - regroup gene families") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            params {
+                humann_image = 'docker://biobakery/humann:latest'
+            }
+            workflow {
+                """
+                input[0] = file('${projectDir}/testdata/humann_outputs/humann_genefamilies_cpm.tsv')
+                input[1] = file('${projectDir}/testdata/humann_demo_db')
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

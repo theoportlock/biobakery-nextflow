@@ -1,0 +1,57 @@
+nextflow_workflow {
+
+    name "Test MERGE Process"
+    script "tests/modules/mergereads_test_workflow.nf"
+    workflow "test_merge"
+    
+    test("MERGE - concatenate paired-end reads (Apptainer)") {
+        config "conf/test.apptainer.config"
+        
+        when {
+            workflow {
+                """
+                input[0] = Channel.fromFilePairs('${projectDir}/testdata/*_R{1,2}_001.fastq.gz', size: 2)
+                    .first()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+    
+    test("MERGE - concatenate paired-end reads (Docker)") {
+        config "conf/test.docker.config"
+        
+        when {
+            workflow {
+                """
+                input[0] = Channel.fromFilePairs('${projectDir}/testdata/*_R{1,2}_001.fastq.gz', size: 2)
+                    .first()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+    
+    test("MERGE - concatenate paired-end reads (No Container)") {
+        config "conf/test.nocontainer.config"
+        
+        when {
+            workflow {
+                """
+                input[0] = Channel.fromFilePairs('${projectDir}/testdata/*_R{1,2}_001.fastq.gz', size: 2)
+                    .first()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
