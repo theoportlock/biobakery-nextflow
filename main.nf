@@ -148,23 +148,6 @@ workflow {
                 tuple(sample_id, profile_file)
             }
 
-        // Validate that all input samples have matching profiles
-        read_pair_samples = read_pairs.map { sample, reads -> sample }
-        profile_samples = precomputed_profiles.map { sample, profile -> sample }
-        
-        // Collect samples and validate
-        read_pair_samples.collect().combine(profile_samples.collect()).map { read_samples, profile_samples ->
-            def missing_profiles = read_samples - profile_samples
-            def extra_profiles = profile_samples - read_samples
-            
-            if (missing_profiles.size() > 0) {
-                error "The following input samples do not have matching metaphlan profiles: ${missing_profiles.join(', ')}"
-            }
-            if (extra_profiles.size() > 0) {
-                log.warn "The following metaphlan profiles do not have matching input samples (will be ignored): ${extra_profiles.join(', ')}"
-            }
-        }.subscribe()
-
         // Merge reads if kneaddata was run, otherwise use raw reads
         merged_reads = params.k ? MERGE(kneaddata_out.cleaned_reads) : MERGE(read_pairs)
     }
