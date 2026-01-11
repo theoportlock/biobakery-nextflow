@@ -1,10 +1,9 @@
 #!/bin/bash
 nextflow main.nf \
 	-c conf/laptop.config \
+	-with-tower \
 	-resume \
-	-bg \
-	--input 'biobakery-nextflow/testdata/*R{1,2}*' \
+	--input 'testdata/*R{1,2}*' \
 	--k \
-	--m \
-	--h
+	--m
 
